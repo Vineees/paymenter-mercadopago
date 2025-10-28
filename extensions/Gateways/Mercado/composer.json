@@ -1,0 +1,13 @@
+{
+    "name": "paymenter/mercadopago-gateway",
+    "description": "Mercado Pago Gateway for Paymenter",
+    "require": {
+        "php": ">=8.1",
+        "mercadopago/dx-php": "^2.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "Paymenter\\Extensions\\Gateways\\MercadoPago\\": ""
+        }
+    }
+}
