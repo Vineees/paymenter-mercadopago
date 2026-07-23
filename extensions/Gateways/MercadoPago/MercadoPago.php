@@ -24,6 +24,13 @@ class MercadoPago extends Gateway
         return '1.0.0';
     }
 
+    public function pay(Invoice $invoice, $total)
+    {
+        $currency = (string) ($invoice->currency_code ?? $invoice->currency ?? $invoice->currency_id ?? 'BRL');
+
+        return $this->createPayment($invoice, (float) $total, $currency);
+    }
+
     // 2. Configuração (Credenciais)
     public function getConfig($values = []): array
     {
@@ -63,7 +70,7 @@ class MercadoPago extends Gateway
             // Você pode adicionar outras configurações como public key, etc.
         ];
     }
-    
+
     // 3. Método para Processar o Pagamento
     // Este método é chamado quando o usuário clica em "Pagar" na fatura.
     // Ele deve retornar a URL para onde o usuário será redirecionado para concluir o pagamento.
@@ -71,19 +78,19 @@ class MercadoPago extends Gateway
     {
         // 1. Obter as credenciais
         $mode = $this->getSetting('mode');
-        $accessToken = ($mode === 'production') ? 
-                       $this->getSetting('accessToken') : 
+        $accessToken = ($mode === 'production') ?
+                       $this->getSetting('accessToken') :
                        $this->getSetting('sandboxAccessToken');
 
         // 2. Inicializar o SDK do Mercado Pago (via Composer)
         // **IMPORTANTE**: Você precisará garantir que o SDK do Mercado Pago
         // esteja disponível para sua extensão (geralmente via composer.json da extensão).
-        
+
         \MercadoPago\SDK::setAccessToken($accessToken);
 
         // 3. Criar o objeto de Preferência de Pagamento
         $preference = new \MercadoPago\Preference();
-        
+
         // Dados do Item (Fatura)
         $item = new \MercadoPago\Item();
         $item->title = 'Fatura #' . $invoice->id;
@@ -97,11 +104,11 @@ class MercadoPago extends Gateway
             "failure" => route('ext.mercadopago.callback', ['invoice_id' => $invoice->id, 'status' => 'failure']),
             "pending" => route('ext.mercadopago.callback', ['invoice_id' => $invoice->id, 'status' => 'pending']),
         ];
-        
+
         $preference->auto_return = "approved";
-        
+
         // Metadados para identificar o pagamento
-        $preference->external_reference = $invoice->id; 
+        $preference->external_reference = $invoice->id;
 
         // Salvar a preferência no Mercado Pago
         $preference->save();
@@ -116,7 +123,7 @@ class MercadoPago extends Gateway
 
     // 4. Métodos de Callback/Webhook
     // Estes métodos serão usados para as URLs de retorno e para as Notificações IPN.
-    
+
     // Este é um exemplo de como você pode registrar as rotas no método 'boot'
     public function boot()
     {
@@ -164,12 +171,12 @@ class MercadoPago extends Gateway
 
         // 1. Obter as credenciais
         $mode = $this->getSetting('mode');
-        $accessToken = ($mode === 'production') ? 
-                    $this->getSetting('accessToken') : 
+        $accessToken = ($mode === 'production') ?
+                    $this->getSetting('accessToken') :
                     $this->getSetting('sandboxAccessToken');
 
         \MercadoPago\SDK::setAccessToken($accessToken);
-        
+
         // 2. Processar a notificação
         $notificationType = $request->input('topic', $request->input('type'));
         $paymentId = $this->extractPaymentId($request);
@@ -178,7 +185,7 @@ class MercadoPago extends Gateway
             try {
                 // Buscar o status do pagamento diretamente no Mercado Pago
                 $payment = \MercadoPago\Payment::find_by_id($paymentId);
-                
+
                 if ($payment) {
                     $invoiceId = (string) $payment->external_reference;
                     $invoice = Invoice::find($invoiceId);
@@ -268,7 +275,7 @@ class MercadoPago extends Gateway
                 return response('Error', 500);
             }
         }
-        
+
         return response('OK', 200);
     }
 
