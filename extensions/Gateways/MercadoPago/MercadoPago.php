@@ -5,6 +5,7 @@ namespace Paymenter\Extensions\Gateways\MercadoPago;
 use App\Classes\Extension\Gateway;
 use App\Models\Invoice;
 use Illuminate\Http\Request;
+use App\Helpers\ExtensionHelper;
 
 class MercadoPago extends Gateway
 {
@@ -74,18 +75,16 @@ class MercadoPago extends Gateway
     // 3. Método para Processar o Pagamento
     // Este método é chamado quando o usuário clica em "Pagar" na fatura.
     // Ele deve retornar a URL para onde o usuário será redirecionado para concluir o pagamento.
-    public function createPayment(Invoice $invoice, float $amount, string $currency): string
+   public function createPayment(Invoice $invoice, float $amount, string $currency): string
     {
-        // 1. Obter as credenciais
-        $mode = $this->getSetting('mode');
+        // 1. Obter as credenciais usando a estrutura correta (Tipo, Nome, Chave)
+        $mode = \App\Helpers\ExtensionHelper::getConfig('gateway', 'MercadoPago', 'mode');
+
         $accessToken = ($mode === 'production') ?
-                       $this->getSetting('accessToken') :
-                       $this->getSetting('sandboxAccessToken');
+                       \App\Helpers\ExtensionHelper::getConfig('gateway', 'MercadoPago', 'accessToken') :
+                       \App\Helpers\ExtensionHelper::getConfig('gateway', 'MercadoPago', 'sandboxAccessToken');
 
-        // 2. Inicializar o SDK do Mercado Pago (via Composer)
-        // **IMPORTANTE**: Você precisará garantir que o SDK do Mercado Pago
-        // esteja disponível para sua extensão (geralmente via composer.json da extensão).
-
+        // 2. Inicializar o SDK do Mercado Pago
         \MercadoPago\SDK::setAccessToken($accessToken);
 
         // 3. Criar o objeto de Preferência de Pagamento
